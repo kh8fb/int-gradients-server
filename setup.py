@@ -9,6 +9,7 @@ setup(
         ],
     },
     install_requires=[
+        "captum",
         "click",
         "click_completion",
         "logbook",
