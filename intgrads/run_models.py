@@ -117,6 +117,8 @@ def run_models(model_name, model, tokenizer, sequence, device):
     token_type_ids = features["token_type_ids"].to(device)
     attention_mask = features["attention_mask"].to(device)
 
+    baseline_ids = torch.zeros(input_ids.shape, dtype=torch.int64).to(device)
+
     grads, step_sizes, intermediates = layer_interm.attribute(inputs=input_ids,
                                                               baselines=baseline_ids,
                                                               additional_forward_args=(
@@ -125,7 +127,7 @@ def run_models(model_name, model, tokenizer, sequence, device):
                                                                   attention_mask
                                                               ),
                                                               target=1,
-                                                              n_steps=n_steps)
+                                                              n_steps=50) # maybe pass n_steps as CLI argument
 
     integrated_grads = lig.attribute(inputs=input_ids,
                                      baselines=baseline_ids,
@@ -135,11 +137,11 @@ def run_models(model_name, model, tokenizer, sequence, device):
                                          attention_mask
                                      ),
                                      target=1,
-                                     n_steps=n_steps)
+                                     n_steps=50)
 
     grads_dict = {"intermediate_grads": grads.to("cpu"),
                   "step_sizes": step_sizes.to("cpu"),
-                  "intermediates": intermediates.to("cpu")
+                  "intermediates": intermediates.to("cpu"),
                   "integrated_grads": integrated_grads.to("cpu")}
 
     return grads_dict

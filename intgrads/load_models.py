@@ -3,13 +3,15 @@ Interface for loading the supported models and tokenizers.
 """
 
 from collections import OrderedDict
+import logging
 from transformers import BertTokenizer, XLNetTokenizer
+import torch
 
 from .modified_xlnet import XLNetForSequenceClassification
-from .bert_model import BertForSequenceClassification
+from .bert_model import BertForSequenceClassification, BertConfig
 
 
-def load_bert_model(model_path):
+def load_bert_model(model_path, device):
     """
     Load the pretrained BERT model states and prepare the model for sentiment analysis on CPU.
     
@@ -20,6 +22,8 @@ def load_bert_model(model_path):
     ----------
     model_path: str
         Path to the pretrained model states binary file.
+    device: torch.device
+        Device to load the model on.
 
     Returns
     -------
@@ -32,7 +36,10 @@ def load_bert_model(model_path):
     model = BertForSequenceClassification(config, 2, [11])
     model_states = torch.load(model_path, map_location=torch.device("cpu"))
     model.load_state_dict(model_states)
+
     model.eval()
+    model.to(device)
+
     tokenizer = BertTokenizer.from_pretrained("bert-large-uncased")
     return model, tokenizer
 
@@ -60,12 +67,15 @@ def load_xlnet_model(model_path, device):
         correct_state = state[7:]
         new_model_states[correct_state] = model_states[state]
     model.load_state_dict(new_model_states)
+
     model.eval()
+    model.to(device)
+
     tokenizer = XLNetTokenizer.from_pretrained("xlnet-base-cased")
     return model, tokenizer
 
 
-def load_models(cuda, bert_path, xlnet_path):
+def load_models(device, bert_path, xlnet_path):
     """
     Load the models and tokenizers and return them in a dictionary.
 
@@ -84,17 +94,15 @@ def load_models(cuda, bert_path, xlnet_path):
         Dictionary with storing each of the model's ids and tokenizers.
         Current keys are 'xlnet' and 'bert'.
     """
+    logging.basicConfig(level=logging.ERROR) # disable model warning messages
+
     if bert_path is not None:
-        bert_model, bert_tokenizer = load_bert_model(str(bert_path))
-        if cuda:
-            bert_model.to('cuda:0')
+        bert_model, bert_tokenizer = load_bert_model(str(bert_path), device)
     else:
         bert_model, bert_tokenizer = None, None
 
     if xlnet_path is not None:
-        xlnet_model, xlnet_tokenizer = load_xlnet_model(str(xlnet_path))
-        if cuda:
-            xlnet_model.to('cuda:0')
+        xlnet_model, xlnet_tokenizer = load_xlnet_model(str(xlnet_path), device)
     else:
         xlnet_model, xlnet_tokenizer = None, None
 

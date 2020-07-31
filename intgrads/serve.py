@@ -120,11 +120,12 @@ def run_bert(sequence):
 )
 def serve(host, port, cuda, bert_path=None, xlnet_path=None):
     global MODEL_DICT, DEVICE
-    MODEL_DICT = load_models(cuda, bert_path, xlnet_path)
 
     if cuda:
         DEVICE = torch.device("cuda:0")
     else:
         DEVICE = torch.device("cpu")
+
+    MODEL_DICT = load_models(DEVICE, bert_path, xlnet_path)
 
     app.run(host=host, port=port, debug=True)
