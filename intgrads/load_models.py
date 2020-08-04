@@ -44,7 +44,7 @@ def load_bert_model(model_path, device):
     return model, tokenizer
 
 
-def load_xlnet_model(model_path, device):
+def load_xlnet_base_model(model_path, device):
     """
     Load the pretrained xlnet states and prepare the model for sentiment analysis.
 
@@ -62,11 +62,7 @@ def load_xlnet_model(model_path, device):
     """
     model = XLNetForSequenceClassification.from_pretrained("xlnet-base-cased")
     model_states = torch.load(model_path, map_location=device)
-    new_model_states = OrderedDict()
-    for state in model_states:
-        correct_state = state[7:]
-        new_model_states[correct_state] = model_states[state]
-    model.load_state_dict(new_model_states)
+    model.load_state_dict(model_states)
 
     model.eval()
     model.to(device)
@@ -75,7 +71,34 @@ def load_xlnet_model(model_path, device):
     return model, tokenizer
 
 
-def load_models(device, bert_path, xlnet_path):
+def load_xlnet_large_model(model_path, device):
+    """
+    Load the pretrained xlnet-large states and prepare the model for sentiment analysis.
+
+    Parameters
+    ----------
+    model_path: str
+        Path to the pretrained model states binary file.
+    device: torch.device
+        Device to load the model on.
+
+    Returns
+    -------
+    model: XLNetForSequenceClassification
+        Model with the loaded pretrained states.
+    """
+    model = XLNetForSequenceClassification.from_pretrained("xlnet-large-cased")
+    model_states = torch.load(model_path, map_location=device)
+    model.load_state_dict(model_states)
+
+    model.eval()
+    model.to(device)
+
+    tokenizer = XLNetTokenizer.from_pretrained("xlnet-large-cased")
+    return model, tokenizer
+
+
+def load_models(device, bert_path, xlnet_base_path, xlnet_large_path):
     """
     Load the models and tokenizers and return them in a dictionary.
 
@@ -85,8 +108,10 @@ def load_models(device, bert_path, xlnet_path):
         Whether or not to run models on CUDA.
     bert_path: str or None
         Path to the pretrained BERT model states binary file.
-    xlnet_path: str or None
-        Path to the pretrained XLNet model states binary file.
+    xlnet_base_path: str or None
+        Path to the pretrained XLNet base model states binary file.
+    xlnet_large_path: str or None
+        Path to the pretrained XLNet large model states binary file.
 
     Returns
     -------
@@ -98,16 +123,14 @@ def load_models(device, bert_path, xlnet_path):
 
     if bert_path is not None:
         bert_model, bert_tokenizer = load_bert_model(str(bert_path), device)
-    else:
-        bert_model, bert_tokenizer = None, None
-
-    if xlnet_path is not None:
-        xlnet_model, xlnet_tokenizer = load_xlnet_model(str(xlnet_path), device)
-    else:
-        xlnet_model, xlnet_tokenizer = None, None
+        return {"model_name": "bert", "model": bert_model, "tokenizer": bert_tokenizer}
+    elif xlnet_base_path is not None:
+        xlnet_model, xlnet_tokenizer = load_xlnet_base_model(str(xlnet_base_path), device)
+        return {"model_name": "xlnet", "model": xlnet_model, "tokenizer": xlnet_tokenizer}
+    elif xlnet_large_path is not None:
+        xlnet_model, xlnet_tokenizer = load_xlnet_large_model(str(xlnet_large_path), device)
+        return {"model_name": "xlnet", "model": xlnet_model, "tokenizer": xlnet_tokenizer}
 
     ## Add additional models here
-
-    models_dict = {"xlnet": (xlnet_model, xlnet_tokenizer),
-                   "bert": (bert_model, bert_tokenizer)}
-    return models_dict
+    else:
+        return None

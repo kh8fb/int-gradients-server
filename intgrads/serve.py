@@ -19,25 +19,21 @@ app = Flask(__name__)
 MODEL_DICT = {}
 DEVICE = None
 
-
-@app.route("/xlnet/", methods=['POST'])
-def run_xlnet():
+@app.route("/model/", methods=["POST"])
+def run_model():
     """
-    Obtain the gradients from running the finetuned XLNet model on the sequence.
+    Obtain the gradients from running the specified model on the sequence.
     The outputs are saved as a gzipped dictionary with the keys:
-    integrated_gradients, intermediate_gradients, step_sizes, sentiment
-
-    The sequence to run gradients on should be passed in JSON format through the POST request.
+    integrated_gradients, intermediate_gradients, step_sizes, intermediates.
     """
     if request.method == 'POST':
-
         data = request.get_json(force=True)
 
         sequence = data["sequence"]
 
-        grads_dict = run_models("xlnet",
-                                MODEL_DICT["xlnet"][0],
-                                MODEL_DICT["xlnet"][1],
+        grads_dict = run_models(MODEL_DICT["model_name"],
+                                MODEL_DICT["model"],
+                                MODEL_DICT["tokenizer"],
                                 sequence,
                                 DEVICE)
 
@@ -48,41 +44,7 @@ def run_xlnet():
 
         with gzip.GzipFile(fileobj=temp_gzip, mode='wb') as f_out:
             shutil.copyfileobj(temp_bytes, f_out)
-            # I assume this is the fastest option
-        temp_gzip.seek(0)
 
-        return send_file(temp_gzip, as_attachment=True, mimetype="/application/gzip", attachment_filename="returned_gradients.gzip")
-
-
-@app.route("/bert/<sequence>", methods=['POST'])
-def run_bert(sequence):
-    """
-    Obtain the gradients from running the finetuned BERT model on the sequence.
-    The outputs are saved as a gzipped dictionary with the keys:
-    integrated_gradients, intermediate_gradients, step_sizes, sentiment
-
-    The sequence to run gradients on should be passed in JSON format through the POST request.
-    """
-    if request.method == 'POST':
-
-        data = request.get_json(force=True)
-
-        sequence = data["sequence"]
-
-        grads_dict = run_models("bert",
-                                MODEL_DICT["bert"][0],
-                                MODEL_DICT["bert"][1],
-                                sequence,
-                                DEVICE)
-
-        temp_bytes, temp_gzip = BytesIO(), BytesIO()
-
-        torch.save(grads_dict, temp_bytes)
-        temp_bytes.seek(0)
-
-        with gzip.GzipFile(fileobj=temp_gzip, mode='wb') as f_out:
-            shutil.copyfileobj(temp_bytes, f_out)
-            # I assume this is the fastest option
         temp_gzip.seek(0)
 
         return send_file(temp_gzip, as_attachment=True, mimetype="/application/gzip", attachment_filename="returned_gradients.gzip")
@@ -93,13 +55,13 @@ def run_bert(sequence):
     "-h",
     "--host",
     default="localhost",
-    help="Host to bind to."
+    help="Host to bind to. Default localhost"
 )
 @click.option(
     "-p",
     "--port",
     default=8888,
-    help="Port to bind to."
+    help="Port to bind to. Default 8888"
 )
 @click.option(
     "--cuda/--cpu",
@@ -109,16 +71,22 @@ def run_bert(sequence):
 @click.option(
     "--bert-path",
     "-bp",
-    help="Path to the BERT finetuned model.",
+    help="Path to the BERT finetuned model. Specify only one model path.",
     default=None,
 )
 @click.option(
-    "--xlnet-path",
-    "-xl",
-    help="Path to the XLNet model.",
-    default=None
+    "--xlnet-base-path",
+    "-xlb",
+    help="Path to the XLNet base model. Specifiy only one model path.",
+    default=None,
 )
-def serve(host, port, cuda, bert_path=None, xlnet_path=None):
+@click.option(
+    "--xlnet-large-path",
+    "-xll",
+    help="Path to the XLNet large model. Specifiy only one model path.",
+    default=None,
+)
+def serve(host, port, cuda, bert_path=None, xlnet_base_path=None, xlnet_large_path=None):
     global MODEL_DICT, DEVICE
 
     if cuda:
@@ -126,6 +94,6 @@ def serve(host, port, cuda, bert_path=None, xlnet_path=None):
     else:
         DEVICE = torch.device("cpu")
 
-    MODEL_DICT = load_models(DEVICE, bert_path, xlnet_path)
+    MODEL_DICT = load_models(DEVICE, bert_path, xlnet_base_path, xlnet_large_path)
 
     app.run(host=host, port=port, debug=True)

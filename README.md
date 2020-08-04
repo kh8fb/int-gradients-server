@@ -24,16 +24,16 @@ Now your environment is set up and you're ready to go.
 ### Usage
 Activate the server directly from the command line with
 
-	 intgrads -bp /path/to/bert.pth -xl /path/to/xlnet.pth
+	 intgrads -bp /path/to/bert.pth --cpu
 
-This command starts the server and loads each of the models so that they're ready to go when called upon.
+This command starts the server and load the model so that it's ready to go when called upon.
 The pretrained and finetuned BERT and XLNet models can be downloaded from this [Google drive folder](https://drive.google.com/drive/folders/1KwNZRHwswFu1Nuiz2nvNmBMJ0jnHoA1d?usp=sharing)
 
-You can provide additional arguments such as the hostname, port, and cuda device.
+You can provide additional arguments such as the hostname, port, and a cuda flag.
 
-After the software has been started, run `curl` with any of the supported filepaths to get and download the attributions.  Currently the supported filepathes are `/xlnet/` and `/bert/`
+After the software has been started, run `curl` with the "model" filepath to get and download the attributions.
 
-      curl http://localhost:8888/xlnet/ -d '{"sequence": "This is the sequence that you want to get the sentiment of"}' --output saved_file.gzip
+      curl http://localhost:8888/model/ -d '{"sequence": "This is the sequence that you want to get the sentiment of"}' --output saved_file.gzip
 
 The gradients are stored in a dictionary with the keys "integrated_gradients", "intermediate_gradients", "step_sizes", and "intermediates".  They are then compressed and able to be retrieved from the saved gzip file with:
 
