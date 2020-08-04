@@ -26,6 +26,14 @@ Activate the server directly from the command line with
 
 	 intgrads -bp /path/to/bert.pth --cpu
 
+OR
+
+	intgrads -xlb /path/to/xlnet-base.pth --cuda
+
+OR
+
+	intgrads -xll /path/to/xlnet-large.pth --cpu
+
 This command starts the server and load the model so that it's ready to go when called upon.
 The pretrained and finetuned BERT and XLNet models can be downloaded from this [Google drive folder](https://drive.google.com/drive/folders/1KwNZRHwswFu1Nuiz2nvNmBMJ0jnHoA1d?usp=sharing)
 
