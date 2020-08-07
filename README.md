@@ -15,7 +15,7 @@ Next, activate the environment, cd into this project's directory and install the
       conda activate int-gradients-server
       pip install -e .
 
-Finally, cd into the cloned intermediate-gradients direcotry and run
+Finally, cd into the cloned intermediate-gradients directory and run
 
 	 pip install -e .
 
@@ -28,11 +28,11 @@ Activate the server directly from the command line with
 
 OR
 
-	intgrads -xlb /path/to/xlnet-base.pth --cuda
+	intgrads -xlb /path/to/xlnet-base.pth --cuda --num-cuda-devs 2
 
 OR
 
-	intgrads -xll /path/to/xlnet-large.pth --cpu
+	intgrads -xll /path/to/xlnet-large.pth --cpu --baseline pad
 
 This command starts the server and load the model so that it's ready to go when called upon.
 The pretrained and finetuned BERT and XLNet models can be downloaded from this [Google drive folder](https://drive.google.com/drive/folders/1KwNZRHwswFu1Nuiz2nvNmBMJ0jnHoA1d?usp=sharing)
@@ -40,6 +40,8 @@ The pretrained and finetuned BERT and XLNet models can be downloaded from this [
 You can provide additional arguments such as the hostname, port, and a cuda flag.
 
 After the software has been started, run `curl` with the "model" filepath to get and download the attributions.
+
+      curl http://localhost:8888/model/ --data @input_json_file.json --output saved_file.gzip -H "Content-Type:application/json; chartset=utf-8"
 
       curl http://localhost:8888/model/ -d '{"sequence": "This is the sequence that you want to get the sentiment of"}' --output saved_file.gzip
 
@@ -62,6 +64,16 @@ If you want to run int-grads-server on a remote server, you can specify the host
 
 The first hostname result tells you which address to use in your `curl` request.
 
-       curl http://10.123.45.110//:8008/model/ -d '{"sequence": "This is the sequence that you want to get the sentiment of"}' --output saved_file.gzip
+      curl http://localhost:8888/model/ 
+       curl http://10.123.45.110//:8008/model/ --data @input_json_file.json --output saved_file.gzip -H "Content-Type:application/json; chartset=utf-8"
 
+### Baseline options
 
+| --baseline option | Resulting baseline                                                 |
+|-------------------|--------------------------------------------------------------------|
+| zero              | Tensor of [zero X num_embeddings] leaving the embeddings layer     |
+| pad               | Tensor of [pad_id X num_ids] going into the embeddings layer       |
+| unk               | Tensor of [unk_id X num_ids] going into the embeddings layer       |
+| rand-norm         | Tensor of random normal distribution leaving the embeddings layer  |
+| rand-unif         | Tensor of random uniform distribution leaving the embeddings layer |
+| period            | Tensor of [period_id X num_ids] going into the embeddings layer    |

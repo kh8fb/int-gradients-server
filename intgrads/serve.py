@@ -17,6 +17,7 @@ from .run_models import run_models
 
 app = Flask(__name__)
 MODEL_DICT = {}
+BASELINE = ""
 DEVICE = None
 
 @app.route("/model/", methods=["POST"])
@@ -27,7 +28,9 @@ def run_model():
     integrated_gradients, intermediate_gradients, step_sizes, intermediates.
     """
     if request.method == 'POST':
-        data = request.get_json(force=True)
+        #data = request.get_json(force=True)
+        print(request)
+        data = request.json
 
         sequence = data["sequence"]
 
@@ -35,7 +38,8 @@ def run_model():
                                 MODEL_DICT["model"],
                                 MODEL_DICT["tokenizer"],
                                 sequence,
-                                DEVICE)
+                                DEVICE,
+                                BASELINE)
 
         temp_bytes, temp_gzip = BytesIO(), BytesIO()
 
@@ -72,6 +76,13 @@ def run_model():
     help="Whether or not to run models on CUDA."
 )
 @click.option(
+    "-b",
+    "--baseline",
+    required=True,
+    help="""Baseline to run with integrated gradients.
+    Currently supported are 'zero', 'pad', 'unk', 'rand-norm', 'rand-unif', and 'period'.""",
+)
+@click.option(
     "--num-cuda-devs",
     default=1,
     required=False,
@@ -102,12 +113,15 @@ def serve(
         host,
         port,
         cuda,
+        baseline,
         num_cuda_devs=1,
         bert_path=None,
         xlnet_base_path=None,
         xlnet_large_path=None
 ):
-    global MODEL_DICT, DEVICE
+    global MODEL_DICT, DEVICE, BASELINE
+
+    BASELINE = str(baseline)
 
     if cuda:
         DEVICE = torch.device("cuda:0")
@@ -115,6 +129,10 @@ def serve(
     else:
         DEVICE = torch.device("cpu")
 
-    MODEL_DICT = load_models(DEVICE, num_cuda_devs, bert_path, xlnet_base_path, xlnet_large_path)
+    try:
+        MODEL_DICT = load_models(DEVICE, num_cuda_devs, bert_path, xlnet_base_path, xlnet_large_path)
+    except Exception as e:
+        print("An Error occurred: ", e)
+        raise e
 
     app.run(host=host, port=port, debug=True)

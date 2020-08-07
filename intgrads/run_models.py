@@ -79,7 +79,77 @@ def xlnet_sequence_forward_func(inputs, model, tok_type_ids, att_mask):
     return outputs
 
 
-def run_models(model_name, model, tokenizer, sequence, device):
+def generate_xlnet_baselines(baseline, input_ids, tokenizer):
+    """
+    Produce the desired baseline id tensor for integrated gradients.
+
+    Parameters
+    ----------
+    baseline: str
+        Baseline to run with integrated gradients. Currently supported are 'zero', 'pad', 'unk',
+       'rand-norm', 'rand-unif', and 'period'.
+    input_ids: torch.tensor(1, num_ids) dtype=torch.int64
+        Encoded form of the input sentence.
+    tokenizer: transformers.tokenizer
+       Tokenizer to process the sequence and produce the input ids
+
+    Returns
+    -------
+    baseline_ids: torch.tensor(1, num_ids) dtype=torch.int64
+        Tensor of the baseline token ids in the same shape as input_ids.
+    """
+    if baseline == "pad":
+        baseline_token_id = tokenizer.pad_token_id
+    elif baseline == "unk":
+        baseline_token_id = tokenizer.unk_token_id
+    elif baseline == "period":
+        baseline_token_id = tokenizer.encoder('.', add_special_tokens=False)[0]
+    elif baseline == "zero":
+        baseline_token_id = 32000
+    elif baseline == "rand-unif":
+        baseline_token_id = 32001
+    elif baseline == "rand-norm":
+        baseline_token_id = 32002
+    baseline_ids = torch.ones(input_ids.shape, dtype=torch.int64) * baseline_token_id
+    return baseline_ids
+
+
+def generate_bert_baselines(baseline, input_ids, tokenizer):
+    """
+    Produce the desired baseline id tensor for integrated gradients.
+
+    Parameters
+    ----------
+    baseline: str
+        Baseline to run with integrated gradients. Currently supported are 'zero', 'pad', 'unk',
+       'rand-norm', 'rand-unif', and 'period'.
+    input_ids: torch.tensor(1, num_ids) dtype=torch.int64
+        Encoded form of the input sentence.
+    tokenizer: transformers.tokenizer
+       Tokenizer to process the sequence and produce the input ids.
+
+    Returns
+    -------
+    baseline_ids: torch.tensor(1, num_ids) dtype=torch.int64
+        Tensor of the baseline token ids in the same shape as input_ids.
+    """
+    if baseline == "pad":
+        baseline_token_id = tokenizer.pad_token_id
+    elif baseline == "unk":
+        baseline_token_id = tokenizer.unk_token_id
+    elif baseline == "period":
+        baseline_token_id = tokenizer.encoder('.', add_special_tokens=False)[0]
+    elif baseline == "zero":
+        baseline_token_id = 30522
+    elif baseline == "rand-unif":
+        baseline_token_id = 30524
+    elif baseline == "rand-norm":
+        baseline_token_id = 30523
+    baseline_ids = torch.ones(input_ids.shape, dtype=torch.int64) * baseline_token_id
+    return baseline_ids
+
+
+def run_models(model_name, model, tokenizer, sequence, device, baseline):
     """
     Run Integrated and Intermediate gradients on the model layer.
 
@@ -91,11 +161,14 @@ def run_models(model_name, model, tokenizer, sequence, device):
     model: torch.nn.Module
        Module to run 
     tokenizer: transformers.tokenizer
-       Tokenizer to tokenize the sequence
+       Tokenizer to process the sequence and produce the input ids
     sequence: str
        Sequence to get the gradients from.
-    Device: torch.device
+    device: torch.device
        Device that models are stored on.
+    baseline: str
+       Baseline to run with integrated gradients. Currently supported are 'zero', 'pad', 'unk',
+       'rand-norm', 'rand-unif', and 'period'.
 
     Returns
     -------
@@ -103,21 +176,22 @@ def run_models(model_name, model, tokenizer, sequence, device):
         Dictionary containing the gradient tensors with the following keys:
         "integrated_gradients", "intermediate_gradients", "step_sizes", and "intermediates".
     """
-    if model_name == "bert":
-        layer_interm = LayerIntermediateGradients(bert_sequence_forward_func, model.bert.embeddings)
-        lig = LayerIntegratedGradients(bert_sequence_forward_func, model.bert.embeddings)
-    elif model_name == "xlnet":
-        layer_interm = LayerIntermediateGradients(
-            xlnet_sequence_forward_func, model.transformer.batch_first
-        )
-        lig = LayerIntegratedGradients(xlnet_sequence_forward_func, model.transformer.batch_first)
-
     features = prepare_input(sequence, tokenizer)
     input_ids = features["input_ids"].to(device)
     token_type_ids = features["token_type_ids"].to(device)
     attention_mask = features["attention_mask"].to(device)
 
-    baseline_ids = torch.zeros(input_ids.shape, dtype=torch.int64).to(device)
+    # set up gradients and the baseline ids
+    if model_name == "bert":
+        layer_interm = LayerIntermediateGradients(bert_sequence_forward_func, model.bert.embeddings)
+        lig = LayerIntegratedGradients(bert_sequence_forward_func, model.bert.embeddings)
+        baseline_ids = generate_bert_baselines(baseline, input_ids, tokenizer).to(device)
+    elif model_name == "xlnet":
+        layer_interm = LayerIntermediateGradients(
+            xlnet_sequence_forward_func, model.transformer.batch_first
+        )
+        lig = LayerIntegratedGradients(xlnet_sequence_forward_func, model.transformer.batch_first)
+        baseline_ids = generate_xlnet_baselines(baseline, input_ids, tokenizer).to(device)
 
     grads, step_sizes, intermediates = layer_interm.attribute(inputs=input_ids,
                                                               baselines=baseline_ids,

@@ -6,6 +6,7 @@ from collections import OrderedDict
 import logging
 from transformers import BertTokenizer, XLNetTokenizer
 import torch
+from torch import nn
 
 from .models.modified_xlnet import XLNetForSequenceClassification
 from .models.bert_model import BertForSequenceClassification, BertConfig
@@ -74,8 +75,19 @@ def load_bert_model(model_path, device, num_cuda_devs):
                                                       encoder_device3=encoder_device3,
                                                       pooler_device=pooler_device)
         model_states = torch.load(model_path, map_location="cpu")
-        model.load_state_dict(model_states, strict=False)
+        model.load_state_dict(model_states, strict=False) 
         model.eval()
+
+    # override the embeddings layer
+    weight = torch.zeros((30525, 768), dtype=torch.float32)
+    weight[0:30522, :] = model.bert.embeddings.word_embeddings.weight
+    weight[30523, :] = torch.rand(768, dtype=torch.float32)
+    weight[30524, :] = torch.randn(768, dtype=torch.float32)
+    weight = weight.to(model.bert.embeddings.word_embeddings.weight.device)
+    model.bert.embeddings.word_embeddings.weight = nn.Parameter(weight)
+
+    # override the config number of embeddings
+    model.bert.embeddings.word_embeddings.num_embeddings += 3
 
     tokenizer = BertTokenizer.from_pretrained("bert-large-uncased")
     return model, tokenizer
@@ -139,6 +151,17 @@ def load_xlnet_base_model(model_path, device, num_cuda_devs):
         model_states = torch.load(model_path, map_location="cpu")
         model.load_state_dict(model_states)
         model.eval()
+
+    # override the embeddings layer
+    weight = torch.zeros((32003, 768), dtype=torch.float32)
+    weight[0:32000, :] = model.transformer.word_embedding.weight
+    weight[32001, :] = torch.rand(768, dtype=torch.float32)
+    weight[32002, :] = torch.randn(768, dtype=torch.float32)
+    weight = weight.to(model.transformer.word_embedding.weight.device)
+    model.transformer.word_embedding.weight = nn.Parameter(weight)
+
+    # override the config number of embeddings
+    model.transformer.word_embedding.num_embeddings += 3
 
     tokenizer = XLNetTokenizer.from_pretrained("xlnet-base-cased")
     return model, tokenizer
@@ -206,6 +229,7 @@ def load_xlnet_large_model(model_path, device, num_cuda_devs):
     tokenizer = XLNetTokenizer.from_pretrained("xlnet-large-cased")
     return model, tokenizer
 
+
 def load_models(device, num_cuda_devs, bert_path, xlnet_base_path, xlnet_large_path):
     """
     Load the models and tokenizers and return them in a dictionary.
@@ -230,7 +254,7 @@ def load_models(device, num_cuda_devs, bert_path, xlnet_base_path, xlnet_large_p
         Current keys are 'xlnet' and 'bert'.
     """
     logging.basicConfig(level=logging.ERROR) # disable model warning messages
-    print(num_cuda_devs)
+
     if bert_path is not None:
         bert_model, bert_tokenizer = load_bert_model(str(bert_path), device, num_cuda_devs)
         return {"model_name": "bert", "model": bert_model, "tokenizer": bert_tokenizer}
