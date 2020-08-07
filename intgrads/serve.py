@@ -54,6 +54,7 @@ def run_model():
 @click.option(
     "-h",
     "--host",
+    required=False,
     default="localhost",
     help="Host to bind to. Default localhost"
 )
@@ -61,39 +62,59 @@ def run_model():
     "-p",
     "--port",
     default=8888,
+    required=False,
     help="Port to bind to. Default 8888"
 )
 @click.option(
     "--cuda/--cpu",
+    required=True,
     default=True,
     help="Whether or not to run models on CUDA."
 )
 @click.option(
+    "--num-cuda-devs",
+    default=1,
+    required=False,
+    help="Number of cuda devices to run the model on. Should be between 1 and 4.",
+)
+@click.option(
     "--bert-path",
     "-bp",
+    required=False,
     help="Path to the BERT finetuned model. Specify only one model path.",
     default=None,
 )
 @click.option(
     "--xlnet-base-path",
     "-xlb",
+    required=False,
     help="Path to the XLNet base model. Specifiy only one model path.",
     default=None,
 )
 @click.option(
     "--xlnet-large-path",
     "-xll",
+    required=False,
     help="Path to the XLNet large model. Specifiy only one model path.",
     default=None,
 )
-def serve(host, port, cuda, bert_path=None, xlnet_base_path=None, xlnet_large_path=None):
+def serve(
+        host,
+        port,
+        cuda,
+        num_cuda_devs=1,
+        bert_path=None,
+        xlnet_base_path=None,
+        xlnet_large_path=None
+):
     global MODEL_DICT, DEVICE
 
     if cuda:
         DEVICE = torch.device("cuda:0")
+        # will always load inputs on this device even if model parallel option used
     else:
         DEVICE = torch.device("cpu")
 
-    MODEL_DICT = load_models(DEVICE, bert_path, xlnet_base_path, xlnet_large_path)
+    MODEL_DICT = load_models(DEVICE, num_cuda_devs, bert_path, xlnet_base_path, xlnet_large_path)
 
     app.run(host=host, port=port, debug=True)
