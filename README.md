@@ -78,12 +78,12 @@ The first hostname result tells you which address to use in your `curl` request.
 | rand-unif         | Tensor of random uniform distribution leaving the embeddings layer |
 | period            | Tensor of [period_id X num_ids] going into the embeddings layer    |
 
-### Parallel models
-The models offered by intgrads are often too large to obtain gradients results on a single GPU for.  Luckily, intgrads offers a parallelized version of these models with significant speedup.  Below is a table for evaluating the improved results from these parallel models.  Each model was run with 200 large examples multiple times in order to obtain the parallelized improvements.
+### Benchmarking int-gradients server
+The models offered by intgrads are often too large to obtain integrated or intermediate gradient results on a single GPU (with large inputs).  As a result, the benchmarking file located at `intgrads/models/run_parallel_models_time_trial.py` can be used to compare the speedup for the parallelized versions of the models.The file runs only the integrated and intermediate gradients (no server) for 1,855 examples from the IMDB dataset that take up the maximum length, 512 tokens.  These incredibly large inputs are difficult for gradient calculations and require models to be distributed between several GPUs.  Below are the average results for running the gradients 10 times over the inputs.  The benchmarking file also has a CLI so that your processing speed can be compared to ours.
 
 | Device | Bert Processing Time | Bert Speedup | XLNet Processing Time | XLNet Speedup |
 |--------|----------------------|--------------|-----------------------|---------------|
-|   CPU  | 16697 sec            | -            | 57600 + sec           | -             |
+|   CPU  | 16697 sec            | -            | 57600 sec             | -             |
 |  1 GPU | CUDA OUT OF MEMORY   | -            | CUDA OUT OF MEMORY    | -             |
 |  2 GPU | 685 sec              | 24.44 x      | CUDA OUT OF MEMORY    | -             |
-| 4 GPU  | 671 sec              | 24.83 x      | 1601 sec              | 35.97x        |
+| 4 GPU  | 671 sec              | 24.83 x      | 1601 sec              | 35.97 x       |

@@ -1,5 +1,5 @@
 """
-CLI to convert line-separated .txt file of sequences to a bash file of curl commands for int-gradients-server
+CLI to test the performance of the parallelized models over multiple GPUs compared to CPU.
 """
 
 import click
@@ -120,6 +120,8 @@ def load_xlnet_base_model(model_path, device, num_cuda_devs):
     -------
     model: XLNetForSequenceClassification
         Model with the loaded pretrained states.
+    tokenizer: XLNetTokenizer
+        Tokenizer for processing the input sequences.
     """
     if num_cuda_devs < 2:
         model = XLNetForSequenceClassification.from_pretrained("xlnet-base-cased")
@@ -177,7 +179,19 @@ def load_xlnet_base_model(model_path, device, num_cuda_devs):
 
 def load_and_tokenize(filepath, tokenizer):
     """
-    Loads the .txt file and tokenizes each output, storing them in a list
+    Load the .txt file and tokenize each output, storing all tokenized examples in a list.
+
+    Parameters
+    ----------
+    filepath: str
+        Path to .txt file containing line-separated examples to pass into the model.
+    tokenizer: Transformers Tokenizer
+        Tokenizer to tokenize the inputs.
+
+    Returns
+    -------
+    tokenized_examples: list
+        Tokenized list of all of the examples in the .txt file
     """
     tokenized_examples = []
     with open(filepath, 'r') as fobj:
@@ -192,6 +206,7 @@ def load_and_tokenize(filepath, tokenizer):
 def bert_sequence_forward_func(inputs, model, tok_type_ids, att_mask):
     """
     Passes forward the inputs and relevant keyword arguments.
+
     Parameters
     ----------
     inputs: torch.tensor(1, num_ids), dtype=torch.int64
@@ -213,6 +228,7 @@ def bert_sequence_forward_func(inputs, model, tok_type_ids, att_mask):
 def xlnet_sequence_forward_func(inputs, model, tok_type_ids, att_mask):
     """
     Passes forward the inputs and relevant keyword arguments.
+
     Parameters
     ----------
     inputs: torch.tensor(1, num_ids), dtype=torch.int64
@@ -305,7 +321,7 @@ def run_models(model, model_name, num_trials, subset, tokenized_list, device):
 @click.option(
     "-fp",
     "--filepath",
-    help="path to the .txt file of sequences",
+    help="Path to .txt file of sequences",
     required=True
 )
 @click.option(
@@ -332,13 +348,13 @@ def run_models(model, model_name, num_trials, subset, tokenized_list, device):
 @click.option(
     "-cudanum",
     "--num-cuda-devices",
-    help="Number of cuda devices to run models on",
+    help="Number of cuda devices to run the model on. If 0, models will run on CPU.",
     default=0
 )
 @click.option(
     "--num-trials",
     "-nt",
-    help="Number of times to repeat the process",
+    help="Number of times to repeat the process.",
     default=3,
 )
 def main(filepath, subset, xlnet_model_path=None, bert_model_path=None, num_cuda_devices=0, num_trials=3):
