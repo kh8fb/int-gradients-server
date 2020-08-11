@@ -77,3 +77,13 @@ The first hostname result tells you which address to use in your `curl` request.
 | rand-norm         | Tensor of random normal distribution leaving the embeddings layer  |
 | rand-unif         | Tensor of random uniform distribution leaving the embeddings layer |
 | period            | Tensor of [period_id X num_ids] going into the embeddings layer    |
+
+### Parallel models
+The models offered by intgrads are often too large to obtain gradients results on a single GPU for.  Luckily, intgrads offers a parallelized version of these models with significant speedup.  Below is a table for evaluating the improved results from these parallel models.  Each model was run with 200 large examples multiple times in order to obtain the parallelized improvements.
+
+| Device | Bert Processing Time | Bert Speedup | XLNet Processing Time | XLNet Speedup |
+|--------|----------------------|--------------|-----------------------|---------------|
+|   CPU  | 16697 sec            | -            | 57600 + sec           | -             |
+|  1 GPU | CUDA OUT OF MEMORY   | -            | CUDA OUT OF MEMORY    | -             |
+|  2 GPU | 685 sec              | 24.44 x      | CUDA OUT OF MEMORY    | -             |
+| 4 GPU  | 671 sec              | 24.83 x      | 1601 sec              | 35.97x        |
