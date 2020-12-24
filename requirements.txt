@@ -21,7 +21,7 @@ requests==2.24.0
 sacremoses==0.0.43
 sentencepiece==0.1.91
 six==1.15.0
-tokenizers==0.7.0
+tokenizers==0.8.1rc1
 torch==1.5.1
 tqdm==4.46.1
 transformers==3.0.2
