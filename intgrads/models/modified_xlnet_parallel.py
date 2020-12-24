@@ -44,7 +44,7 @@ from torch.nn import functional as F
 
 from transformers.activations import gelu_new, swish
 from transformers.configuration_xlnet import XLNetConfig
-from transformers.file_utils import add_code_sample_docstrings, add_start_docstrings, add_start_docstrings_to_callable
+from transformers.file_utils import add_start_docstrings, add_start_docstrings_to_callable
 from transformers.modeling_utils import PoolerAnswerClass, PoolerEndLogits, PoolerStartLogits, PreTrainedModel, SequenceSummary
 
 
@@ -807,7 +807,6 @@ class XLNetModel(XLNetPreTrainedModel):
         return pos_emb
 
     @add_start_docstrings_to_callable(XLNET_INPUTS_DOCSTRING.format("(batch_size, sequence_length)"))
-    @add_code_sample_docstrings(tokenizer_class=_TOKENIZER_FOR_DOC, checkpoint="xlnet-base-cased")
     def forward(
         self,
         input_ids=None,
@@ -1060,7 +1059,6 @@ class XLNetForSequenceClassification(XLNetPreTrainedModel):
         self.init_weights()
 
     @add_start_docstrings_to_callable(XLNET_INPUTS_DOCSTRING.format("(batch_size, sequence_length)"))
-    @add_code_sample_docstrings(tokenizer_class=_TOKENIZER_FOR_DOC, checkpoint="xlnet-base-cased")
     def forward(
         self,
         input_ids=None,
