@@ -116,6 +116,11 @@ def load_xlnet_base_model(model_path, device, num_cuda_devs):
     if num_cuda_devs < 2:
         model = XLNetForSequenceClassification.from_pretrained("xlnet-base-cased")
         model_states = torch.load(model_path, map_location=device)
+        if list(model_states.keys())[0][:6] == "module":
+            for key in list(model_states.keys()):
+                new_name = key[7:]
+                state_dict[new_name] = state_dict[key]
+                del state_dict[key]
         model.load_state_dict(model_states)
 
         model.eval()
@@ -190,6 +195,11 @@ def load_xlnet_large_model(model_path, device, num_cuda_devs):
     if num_cuda_devs < 2:
         model = XLNetForSequenceClassification.from_pretrained("xlnet-large-cased")
         model_states = torch.load(model_path, map_location=device)
+        if list(model_states.keys())[0][:6] == "module":
+            for key in list(model_states.keys()):
+                new_name = key[7:]
+                state_dict[new_name] = state_dict[key]
+                del state_dict[key]
         model.load_state_dict(model_states)
 
         model.eval()
