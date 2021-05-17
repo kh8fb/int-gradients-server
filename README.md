@@ -64,8 +64,7 @@ If you want to run int-grads-server on a remote server, you can specify the host
 
 The first hostname result tells you which address to use in your `curl` request.
 
-      curl http://localhost:8888/model/ 
-       curl http://10.123.45.110//:8008/model/ --data @input_json_file.json --output saved_file.gzip -H "Content-Type:application/json; chartset=utf-8"
+    	  curl http://10.123.45.110:8008/model/ --data @input_json_file.json --output saved_file.gzip -H "Content-Type:application/json; chartset=utf-8"
 
 ### Baseline options
 
