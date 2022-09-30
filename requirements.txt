@@ -8,7 +8,7 @@ filelock==3.0.12
 flask==1.1.2
 future==0.18.2
 idna==2.9
-joblib==0.15.1
+joblib==1.2.0
 kiwisolver==1.2.0
 logbook==1.5.3
 matplotlib==3.2.2
